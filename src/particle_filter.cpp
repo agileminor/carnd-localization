@@ -3,6 +3,7 @@
  *
  *  Created on: Dec 12, 2016
  *      Author: Tiffany Huang
+ *      Revised and completed version Author: Ian Gilmore
  */
 
 #include <random>
@@ -19,7 +20,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     	std::mt19937 gen(rd());
 	//default_random_engine gen;
 	is_initialized = true;
-	num_particles = 2;
+	num_particles = 10;
 	//vector<Particle> particles;
 	normal_distribution<double> N_x_part(x, std[0]);
 	normal_distribution<double> N_y_part(y, std[1]);
@@ -54,7 +55,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	normal_distribution<double> N_x_part(0, std_pos[0]);
 	normal_distribution<double> N_y_part(0, std_pos[1]);
 	normal_distribution<double> N_theta_part(0, std_pos[2]);
-	cout << "MOVE" << endl;
+	//cout << "MOVE" << endl;
 	for(int i=0;i<num_particles;i++) {
 		double n_x = N_x_part(gen);
 		double n_y = N_y_part(gen);
@@ -73,8 +74,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		particles[i].x += n_x;
 		particles[i].y += n_y;
 		particles[i].theta += n_theta;
-		cout << "\tvelocity= " << velocity << " yaw_rate= " << yaw_rate << endl;
-		cout << "\tnew particle x= " << particles[i].x << " y= " << particles[i].y << " yaw= " << particles[i].theta << endl;
+		//cout << "\tvelocity= " << velocity << " yaw_rate= " << yaw_rate << endl;
+		//cout << "\tnew particle x= " << particles[i].x << " y= " << particles[i].y << " yaw= " << particles[i].theta << endl;
 
 	}
 	// TODO: Add measurements to each particle and add random Gaussian noise.
@@ -109,8 +110,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		Particle cur_part = particles[i];
 		std::vector<LandmarkObs> obs_temp = observations;
 		std::vector<LandmarkObs> cur_lmks;
-		cout << "UPDATE" << endl;
-	        cout << "\tparticle x = " << cur_part.x << " y= " << cur_part.y << " theta= " << cur_part.theta << " id= " << cur_part.id << endl;	
+		//cout << "UPDATE" << endl;
+	        //cout << "\tparticle x = " << cur_part.x << " y= " << cur_part.y << " theta= " << cur_part.theta << " id= " << cur_part.id << endl;	
 		// filter out landmarks out of sensor range, to minimize looping
 		for(int k=0;k<map_landmarks.landmark_list.size();k++) {
 			if (dist(cur_part.x, cur_part.y, map_landmarks.landmark_list[k].x_f, map_landmarks.landmark_list[k].y_f) <= sensor_range) {
@@ -129,10 +130,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double min_y;
 			double min_id;
 			// remap observation x/y using particle x/y/yaw
-			cout << "\tobs x = " << obs_temp[j].x << " y = " << obs_temp[j].y << endl;
-			obs_temp[j].x = cur_part.x + obs_temp[j].x * cos(cur_part.theta) - obs_temp[j].y * sin(cur_part.theta);
-			obs_temp[j].y = cur_part.y + obs_temp[j].x * sin(cur_part.theta) + obs_temp[j].y * cos(cur_part.theta);
-			cout << "\ttransformed obs x = " << obs_temp[j].x << " y = " << obs_temp[j].y << endl;
+			//cout << "\tobs x = " << obs_temp[j].x << " y = " << obs_temp[j].y << endl;
+			double cur_x = obs_temp[j].x;
+			double cur_y = obs_temp[j].y;
+			obs_temp[j].x = cur_part.x + cur_x * cos(cur_part.theta) - cur_y * sin(cur_part.theta);
+			obs_temp[j].y = cur_part.y + cur_x * sin(cur_part.theta) + cur_y * cos(cur_part.theta);
+			//cout << "\ttransformed obs x = " << obs_temp[j].x << " y = " << obs_temp[j].y << endl;
 			// compare current remapped observation with landmarks. Pick nearest one to calculate weight
 			for(int m=0;m < cur_lmks.size(); m++) {
 				double cur_dist = dist(obs_temp[j].x, obs_temp[j].y, cur_lmks[m].x, cur_lmks[m].y);
@@ -143,22 +146,22 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					min_id = cur_lmks[m].id;
 				}
 			}
-			cout << "\tmatched landmark x=" << min_x << " y= " << min_y << " id= " << min_id << endl;
+			//cout << "\tmatched landmark x=" << min_x << " y= " << min_y << " id= " << min_id << endl;
 			double term1 = pow((obs_temp[j].x - min_x), 2)/ (2 * pow(std_landmark[0], 2));
 			double term2 = pow((obs_temp[j].y - min_y), 2)/ (2 * pow(std_landmark[1], 2));
 			double term3 = 2 * M_PI * std_landmark[0] * std_landmark[1];
-			cout << "\t term1=" << term1 << " term2= " << term2 << " term3= " << term3 << endl;
+			//cout << "\t term1=" << term1 << " term2= " << term2 << " term3= " << term3 << endl;
 			cur_weight = 1 / term3 * exp(-(term1 + term2));
 			if(cur_weight < 1e-6) {
 				cur_weight = 1e-6;
 			}
-			cout << "\tadded weight= " << cur_weight << endl;
+			//cout << "\tadded weight= " << cur_weight << endl;
 			total_weight *= cur_weight;
-			cout << "\ttotal weight= " << total_weight << endl;
+			//cout << "\ttotal weight= " << total_weight << endl;
 
 		}
 		particles[i].weight = total_weight;
-		cout << "\ttotal weight= " << total_weight << endl;
+		//cout << "\ttotal weight= " << total_weight << endl;
 	}
 }
 
@@ -176,10 +179,10 @@ void ParticleFilter::resample() {
     	}
 	*/
 	//cout << "weights sum= " << weights_sum << endl;
-	cout << "RESAMPLE" << endl;
+	//cout << "RESAMPLE" << endl;
     	for(int i=0; i<num_particles; i++) {
         	weights[i] = particles[i].weight;
-		cout << "weight= " << particles[i].weight << endl;
+		//cout << "weight= " << particles[i].weight << endl;
     	}
     	std::discrete_distribution<> d(weights.begin(), weights.end());
     	for(int n=0; n<num_particles; ++n) {
@@ -187,7 +190,7 @@ void ParticleFilter::resample() {
     	}
     	particles = particles_new;
 	for(int i=0;i<num_particles;i++) {
-		cout << "x= " << particles[i].x << " y= " << particles[i].y << " theta= " << particles[i].theta << " id= " << particles[i].id << endl;
+		//cout << "x= " << particles[i].x << " y= " << particles[i].y << " theta= " << particles[i].theta << " id= " << particles[i].id << endl;
 		particles[i].id = i; // renumber to keep track of particles in next round
 	}
 }
